@@ -9,10 +9,9 @@ const prepareTweetUrl = (username, tweetId)=> {
 }
 
 
-const searchTweets = (searchStr) => {
+/*const searchTweets = (searchStr) => {
     return new Promise((resolve, reject)=>{
         T.get('search/tweets', { q: searchStr, count: 10 }, function(err, data, response) {
-            console.log(data);
             if(err) {
                 reject(err);
             }
@@ -34,9 +33,79 @@ const searchTweets = (searchStr) => {
 
         });
     })
+}*/
+
+const searchTweets = (searchStr) => {
+    return new Promise((resolve, reject)=>{
+        T.get('search/tweets', { q: searchStr, count: 50 }, function(err, data, response) {
+            if(err) {
+                reject(err);
+            }
+            let statuses = data.statuses,tweetsPromise={}, tweetList =[],tweetHTMLPromises =[],count=0;
+          
+                console.log(statuses.length);
+                if(statuses.length) {
+                    for(let i in statuses) {
+                        let screen_name = statuses[i].user.screen_name;
+                        let id_str=  statuses[i].id_str;
+                        
+                        if(count < 10){       
+                            let tweetPromise = GetTweetHTML.getTweetHTMLFromURL(prepareTweetUrl(screen_name, id_str));
+                            tweetHTMLPromises.push(tweetPromise);
+                            count++;
+                        }
+
+                        tweetList.push(prepareTweetObj(screen_name,id_str));
+                    }
+                }
+               
+
+
+            Promise.all(tweetHTMLPromises).then(data=>{
+                let reponseObj = {
+                    totalTweetList: tweetList,
+                    topTenTweetHTML: data
+                }
+                resolve(reponseObj);
+            })
+        });
+    })
 }
 
-export default {searchTweets};
+const searchTweetsForGivenSearchIds = (request) => {
+    return new Promise((resolve, reject)=>{
+        let tweetHTMLPromises =[];
+        for(let idx in request) {
+            console.log[request[idx]]
+            let tweetPromise = GetTweetHTML.getTweetHTMLFromURL(prepareTweetUrl(request[idx].screen_name, request[idx].id_str));
+            tweetHTMLPromises.push(tweetPromise);
+        }
+            Promise.all(tweetHTMLPromises).then(data=>{
+            let tweetList = [];
+            if(data.length) {
+                for(let i in data) {
+                    console.log[data[i]]
+                    tweetList.push(JSON.parse(data[i]).html);
+                }
+            }
+            resolve(tweetList);
+            })
+    });
+}
+
+const prepareTweetObj= (screen_name,id_str)=>{
+    console.log(screen_name);
+    let tweet ={
+        screen_name:screen_name,
+        id_str:id_str
+    };
+    return tweet;
+}
+
+
+export default {searchTweets,
+                searchTweetsForGivenSearchIds};
+
 
 
 
